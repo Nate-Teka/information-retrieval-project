@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class NoteService {
@@ -32,15 +33,15 @@ public class NoteService {
         note.setContent(dto.getContent());
         note.setLastModifiedDate(LocalDateTime.now());
 
+        // preprocess tokens
         note.setTokens(new HashSet<>(textProcessing.preprocess(dto.getContent())));
 
+        // generate tags
         List<String> autoTags = tfidfService.generateTagsForNoteContent(dto.getContent(), 6);
-        List<String> userTags = dto.getUserTags() != null ? dto.getUserTags() : new ArrayList<>();
-
-        List<String> merged = tfidfService.mergeUserTags(autoTags, userTags);
-
+        List<String> merged = tfidfService.mergeUserTags(autoTags, dto.getUserTags());
         note.setTags(new HashSet<>(merged));
-        note.setUserTags(new HashSet<>(userTags));
+        note.setUserTags(new HashSet<>(dto.getUserTags()));
+
 
         return repo.save(note);
     }
@@ -78,66 +79,38 @@ public class NoteService {
     public List<NoteResponse> search(String q, String tag) {
         List<Note> notes = repo.findAll();
 
-        // Preprocess query
-        List<String> queryTokens = q != null && !q.isEmpty() ? textProcessing.preprocess(q) : Collections.emptyList();
-
-        // Prepare IDF map
-        Map<String, Integer> df = tfidfService.computeDfAll();
-        int N = (int) repo.count();
-        Map<String, Double> idfMap = tfidfService.computeIdf(df, Math.max(N, 1));
-
-        // Filter by tag if provided
-        if (tag != null && !tag.isEmpty()) {
-            String lowerTag = tag.toLowerCase();
+        if (q != null && !q.isEmpty()) {
+            Set<String> queryTokens = new HashSet<>(textProcessing.preprocess(q));
             notes = notes.stream()
-                    .filter(n -> (n.getTags() != null && n.getTags().stream().anyMatch(t -> t.contains(lowerTag)))
-                            || (n.getUserTags() != null
-                                    && n.getUserTags().stream().anyMatch(t -> t.contains(lowerTag))))
+                    .filter(n -> n.getTokens() != null && !Collections.disjoint(n.getTokens(), queryTokens))
                     .collect(Collectors.toList());
         }
 
-        // Compute TF-IDF score for each note
-        List<NoteScore> scoredNotes = notes.stream()
-                .map(n -> new NoteScore(n,
-                        tfidfService.computeRelevanceScore(new ArrayList<>(n.getTokens()), queryTokens, idfMap)))
-                .filter(ns -> ns.score > 0) // optional: only notes that match
-                .sorted((a, b) -> Double.compare(b.score, a.score)) // descending relevance
-                .collect(Collectors.toList());
-
-        // Return NoteResponse DTOs
-        return scoredNotes.stream()
-                .map(ns -> toDto(ns.note)) // you can merge allTags here if you want
-                .collect(Collectors.toList());
-    }
-
-    // Helper class for scoring
-    private static class NoteScore {
-        Note note;
-        double score;
-
-        NoteScore(Note note, double score) {
-            this.note = note;
-            this.score = score;
+        if (tag != null && !tag.isEmpty()) {
+            notes = notes.stream()
+                    .filter(n -> (n.getTags() != null && n.getTags().stream().anyMatch(t -> t.contains(tag)))
+                            || (n.getUserTags() != null && n.getUserTags().stream().anyMatch(t -> t.contains(tag))))
+                    .collect(Collectors.toList());
         }
-    }
 
+        return notes.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
     public NoteResponse toDto(Note note) {
         NoteResponse dto = new NoteResponse();
         dto.setId(note.getId());
         dto.setTitle(note.getTitle());
         dto.setContent(note.getContent());
+
+        // Convert sets to lists, handle nulls
         dto.setTokens(note.getTokens() != null ? new ArrayList<>(note.getTokens()) : new ArrayList<>());
+        dto.setAllTags(
+                Stream.concat(
+                        note.getTags() != null ? note.getTags().stream() : Stream.empty(),
+                        note.getUserTags() != null ? note.getUserTags().stream() : Stream.empty())
+                        .collect(Collectors.toList()));
 
-        List<String> mergedTags = new ArrayList<>();
-        if (note.getUserTags() != null)
-            mergedTags.addAll(note.getUserTags());
-        if (note.getTags() != null)
-            mergedTags.addAll(note.getTags());
-
-        dto.setTags(note.getTags() != null ? new ArrayList<>(note.getTags()) : new ArrayList<>());
-        dto.setUserTags(note.getUserTags() != null ? new ArrayList<>(note.getUserTags()) : new ArrayList<>());
-        dto.setAllTags(mergedTags);
         return dto;
     }
-
 }
