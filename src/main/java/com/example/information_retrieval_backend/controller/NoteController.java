@@ -1,57 +1,88 @@
 package com.example.information_retrieval_backend.controller;
 
+import com.example.information_retrieval_backend.dto.NoteDto;
+import com.example.information_retrieval_backend.dto.NoteResponse;
 import com.example.information_retrieval_backend.model.Note;
 import com.example.information_retrieval_backend.service.NoteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
 
-    private final NoteService svc;
+    private final NoteService noteService;
 
-    public NoteController(NoteService svc) {
-        this.svc = svc;
+    public NoteController(NoteService noteService) {
+        this.noteService = noteService;
     }
 
-    @GetMapping
-    public List<Note> getAll() {
-        return svc.findAll();
-    }
-
+    // Create a new note
     @PostMapping
-    public ResponseEntity<Note> create(@RequestBody Note note) {
-        Note created = svc.create(note);
+    public ResponseEntity<Note> createNote(@RequestBody NoteDto dto) {
+        Note created = noteService.create(dto);
         return ResponseEntity.ok(created);
     }
 
+    // Update an existing note
     @PutMapping("/{id}")
-    public ResponseEntity<Note> update(@PathVariable Long id, @RequestBody Note note) {
+    public ResponseEntity<Note> updateNote(@PathVariable Long id, @RequestBody NoteDto dto) {
         try {
-            Note updated = svc.update(id, note);
+            Note updated = noteService.update(id, dto);
             return ResponseEntity.ok(updated);
         } catch (NoSuchElementException ex) {
             return ResponseEntity.notFound().build();
         }
     }
 
+    // Delete a note
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        svc.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> deleteNote(@PathVariable Long id) {
+        try {
+            noteService.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    /**
-     * Search endpoint: GET /api/notes/search?q=...&tag=...
-     */
+    // Get all notes
+    @GetMapping
+    public List<NoteResponse> getAllNotes() {
+        return noteService.findAll()
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // Search notes by query text and/or tag
     @GetMapping("/search")
-    public List<Note> search(@RequestParam(name = "q", required = false) String q,
-                             @RequestParam(name = "tag", required = false) String tag) {
-        return svc.search(q, tag);
+    public List<NoteResponse> searchNotes(@RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "tag", required = false) String tag) {
+        return noteService.search(q, tag);
     }
-}
 
+    public NoteResponse toDto(Note note) {
+        NoteResponse dto = new NoteResponse();
+        dto.setId(note.getId());
+        dto.setTitle(note.getTitle());
+        dto.setContent(note.getContent());
+
+        // Convert sets to lists, handle nulls
+        dto.setTokens(note.getTokens() != null ? new ArrayList<>(note.getTokens()) : new ArrayList<>());
+        dto.setAllTags(
+                Stream.concat(
+                        note.getTags() != null ? note.getTags().stream() : Stream.empty(),
+                        note.getUserTags() != null ? note.getUserTags().stream() : Stream.empty())
+                        .collect(Collectors.toList()));
+
+        return dto;
+    }
+
+}
