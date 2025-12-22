@@ -147,6 +147,7 @@ public class NoteService {
         dto.setId(note.getId());
         dto.setTitle(note.getTitle());
         dto.setContent(note.getContent());
+        dto.setLastUpdatedAt(note.getLastModifiedDate());
 
         dto.setTokens(note.getTokens() != null ? new ArrayList<>(note.getTokens()) : new ArrayList<>());
 

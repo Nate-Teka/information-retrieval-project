@@ -1,6 +1,7 @@
 package com.example.information_retrieval_backend.dto;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class NoteResponse {
@@ -12,6 +13,7 @@ public class NoteResponse {
     private List<String> tags = new ArrayList<>();
     private List<String> userTags = new ArrayList<>();
     private List<String> allTags = new ArrayList<>();
+    private LocalDateTime lastUpdatedAt;
 
     // --- Getters ---
     public Long getId() {
@@ -37,8 +39,13 @@ public class NoteResponse {
     public List<String> getUserTags() {
         return userTags;
     }
+
     public List<String> getAllTags() {
         return allTags;
+    }
+
+    public LocalDateTime getLastUpdatedAt() {
+        return lastUpdatedAt;
     }
 
     // --- Setters ---
@@ -65,7 +72,13 @@ public class NoteResponse {
     public void setUserTags(List<String> userTags) {
         this.userTags = userTags;
     }
+
     public void setAllTags(List<String> allTags) {
         this.allTags = allTags;
     }
+
+    public void setLastUpdatedAt(LocalDateTime lastUpdatedAt) {
+        this.lastUpdatedAt = lastUpdatedAt;
+    }
+
 }

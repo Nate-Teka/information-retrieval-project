@@ -32,6 +32,9 @@ public class NoteDto {
     public List<String> getallUserTags() {
         return userTags;
     }
+    public LocalDateTime getLastModifiedDate() {
+        return lastModifiedDate;
+    }
 
     // --- Setters ---
 
@@ -51,6 +54,9 @@ public class NoteDto {
     }
     public void setAllTags(List<String> allTags) {
         this.allTags = allTags;
+    }
+    public void setLastModifiedDate(LocalDateTime lastUpdatedAt) {
+        this.lastModifiedDate = lastUpdatedAt;
     }
 }
 

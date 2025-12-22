@@ -73,7 +73,7 @@ public class NoteController {
         dto.setId(note.getId());
         dto.setTitle(note.getTitle());
         dto.setContent(note.getContent());
-
+        dto.setLastUpdatedAt(note.getLastModifiedDate());
         // Convert sets to lists, handle nulls
         dto.setTokens(note.getTokens() != null ? new ArrayList<>(note.getTokens()) : new ArrayList<>());
         dto.setAllTags(
