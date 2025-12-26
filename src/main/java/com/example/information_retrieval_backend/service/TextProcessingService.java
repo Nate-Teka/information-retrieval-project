@@ -34,14 +34,15 @@ public class TextProcessingService {
         this.stopwords = EnglishAnalyzer.getDefaultStopSet();
     }
 
-    public List<String> preprocess(String text) {
-        if (text == null) return Collections.emptyList();
+    public List<String> preprocess(String title, String content) {
+        if (content == null) return Collections.emptyList();
 
         // normalization: lowercase, remove non-alphanum (keeps spaces)
-        String normalized = text.toLowerCase().replaceAll("[^a-z0-9\\s]", " ");
+        String normalizedTitle = title.toLowerCase().replaceAll("[^a-z0-9\\s]", " ");
+        String normalizedContent = content.toLowerCase().replaceAll("[^a-z0-9\\s]", " ");
 
         // CoreNLP annotation
-        Annotation doc = new Annotation(normalized);
+        Annotation doc = new Annotation(normalizedContent + " " + normalizedTitle);
         pipeline.annotate(doc);
 
         List<String> lemmas = new ArrayList<>();

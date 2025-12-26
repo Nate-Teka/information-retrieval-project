@@ -2,8 +2,8 @@ package com.example.information_retrieval_backend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "notes")
@@ -21,86 +21,59 @@ public class Note {
     private LocalDateTime createdDate;
     private LocalDateTime lastModifiedDate;
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "note_tokens", joinColumns = @JoinColumn(name = "note_id"))
     @Column(name = "token")
     private Set<String> tokens = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "note_title_tokens", joinColumns = @JoinColumn(name = "note_id"))
+    @Column(name = "token")
+    private Set<String> titleTokens = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "note_content_tokens", joinColumns = @JoinColumn(name = "note_id"))
+    @Column(name = "token")
+    private Set<String> contentTokens = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "note_user_tags", joinColumns = @JoinColumn(name = "note_id"))
+    @Column(name = "tag")
+    private Set<String> userTags = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "note_tags", joinColumns = @JoinColumn(name = "note_id"))
     @Column(name = "tag")
     private Set<String> tags = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "note_user_tags", joinColumns = @JoinColumn(name = "note_id"))
-    @Column(name = "user_tag")
-    private Set<String> userTags = new HashSet<>();
+    // --- GETTERS AND SETTERS ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    // --- Getters ---
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public Long getId() {
-        return id;
-    }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
-    public String getTitle() {
-        return title;
-    }
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
 
-    public String getContent() {
-        return content;
-    }
+    public LocalDateTime getLastModifiedDate() { return lastModifiedDate; }
+    public void setLastModifiedDate(LocalDateTime lastModifiedDate) { this.lastModifiedDate = lastModifiedDate; }
 
-    public LocalDateTime getCreatedDate() {
-        return createdDate;
-    }
+    public Set<String> getTokens() { return tokens; }
+    public void setTokens(Set<String> tokens) { this.tokens = tokens; }
 
-    public LocalDateTime getLastModifiedDate() {
-        return lastModifiedDate;
-    }
+    public Set<String> getTitleTokens() { return titleTokens; }
+    public void setTitleTokens(Set<String> titleTokens) { this.titleTokens = titleTokens; }
 
-    public Set<String> getTokens() {
-        return tokens;
-    }
+    public Set<String> getContentTokens() { return contentTokens; }
+    public void setContentTokens(Set<String> contentTokens) { this.contentTokens = contentTokens; }
 
-    public Set<String> getTags() {
-        return tags;
-    }
+    public Set<String> getUserTags() { return userTags; }
+    public void setUserTags(Set<String> userTags) { this.userTags = userTags; }
 
-    public Set<String> getUserTags() {
-        return userTags;
-    }
-
-    // --- Setters ---
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public void setCreatedDate(LocalDateTime createdDate) {
-        this.createdDate = createdDate;
-    }
-
-    public void setLastModifiedDate(LocalDateTime lastModifiedDate) {
-        this.lastModifiedDate = lastModifiedDate;
-    }
-
-    public void setTokens(Set<String> tokens) {
-        this.tokens = tokens;
-    }
-
-    public void setTags(Set<String> tags) {
-        this.tags = tags;
-    }
-
-    public void setUserTags(Set<String> userTags) {
-        this.userTags = userTags;
-    }
+    public Set<String> getTags() { return tags; }
+    public void setTags(Set<String> tags) { this.tags = tags; }
 }
