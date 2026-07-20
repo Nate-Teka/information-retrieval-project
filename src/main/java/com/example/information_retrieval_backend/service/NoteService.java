@@ -98,33 +98,40 @@ public class NoteService {
             return notes.stream().map(this::toDtoPublic).toList();
         }
 
+        String normalizedTag = (tag == null || tag.isBlank()) ? null : tag.trim().toLowerCase();
         List<String> queryTokens = (q != null && !q.isEmpty())
                 ? textProcessing.preprocess("", q)
                 : Collections.emptyList();
 
-        // IDF right here
-        Map<String, Integer> df = tfidfService.computeDfAll();
-        int N = Math.max((int) repo.count(), 1);
-        Map<String, Double> idf = tfidfService.computeIdf(df, N);
+        Map<String, Double> queryVector = Collections.emptyMap();
+        Map<String, Double> idf = Collections.emptyMap();
 
-        Map<String, Double> queryVector =
-                tfidfService.buildTfidfVector(queryTokens, idf);
+        if (!queryTokens.isEmpty()) {
+            Map<String, Integer> df = tfidfService.computeDfAll();
+            int N = Math.max((int) repo.count(), 1);
+            idf = tfidfService.computeIdf(df, N);
+            queryVector = tfidfService.buildTfidfVector(queryTokens, idf);
+        }
+
+        final List<String> finalQueryTokens = queryTokens;
+        final Map<String, Double> finalQueryVector = queryVector;
+        final Map<String, Double> finalIdf = idf;
 
         List<NoteResult> ranked = notes.stream()
                 .map(note -> {
+                    if (normalizedTag != null && !matchesTag(note, normalizedTag)) {
+                        return null;
+                    }
 
-                    if (tag != null && !tag.isEmpty()) {
-                        boolean match =
-                                (note.getTags() != null && note.getTags().contains(tag)) ||
-                                (note.getUserTags() != null && note.getUserTags().contains(tag));
-                        if (!match) return null;
+                    if (finalQueryTokens.isEmpty()) {
+                        return new NoteResult(note, 1.0);
                     }
 
                     Map<String, Double> docVector =
-                            tfidfService.buildWeightedDocumentVector(note, idf);
+                            tfidfService.buildWeightedDocumentVector(note, finalIdf);
 
                     double score =
-                            tfidfService.cosineSimilarity(docVector, queryVector);
+                            tfidfService.cosineSimilarity(docVector, finalQueryVector);
 
                     return score > 0 ? new NoteResult(note, score) : null;
                 })
@@ -135,6 +142,18 @@ public class NoteService {
         return ranked.stream()
                 .map(r -> toDtoPublic(r.note))
                 .toList();
+    }
+
+    private boolean matchesTag(Note note, String normalizedTag) {
+        boolean tagMatch = note.getTags() != null && note.getTags().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(tag -> tag.toLowerCase().contains(normalizedTag));
+
+        boolean userTagMatch = note.getUserTags() != null && note.getUserTags().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(tag -> tag.toLowerCase().contains(normalizedTag));
+
+        return tagMatch || userTagMatch;
     }
     private static class NoteResult {
         public Note note;
